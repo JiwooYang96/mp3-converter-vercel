@@ -1,0 +1,296 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #ffb6b6 0%, #d9c1e5 50%, #b6c9e0 100%);
+  padding: 20px;
+}
+
+.container {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+h1 {
+  font-size: 5rem;
+  line-height: 1;
+  font-weight: 900;
+  color: #111;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.url-input {
+  width: 100%;
+  max-width: 580px;
+  padding: 15px;
+  font-size: 1.2rem;
+  border: 4px solid #000;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 40px;
+}
+
+.ipod {
+  width: 320px;
+  height: 480px;
+  position: relative;
+  margin-bottom: 40px;
+}
+
+.ipod-body {
+  width: 100%;
+  height: 100%;
+  background-color: #f2ebe0;
+  border: 4px solid #000;
+  border-radius: 25px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px 20px;
+}
+
+.screen {
+  width: 100%;
+  height: 200px;
+  background-color: #e0dbf0;
+  border: 4px solid #000;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  position: relative;
+  overflow: hidden;
+  padding: 15px;
+}
+
+.album-cover {
+  width: 85px;
+  height: 85px;
+  background-color: #d9c1e5;
+  border: 4px solid #000;
+  border-radius: 8px;
+  float: left;
+  margin-right: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.album-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.music-note {
+  font-size: 2rem;
+  position: relative;
+  top: -2px;
+}
+
+.song-info {
+  overflow: hidden;
+  padding-top: 10px;
+}
+
+.song-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artist-name {
+  font-size: 0.9rem;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-container {
+  position: absolute;
+  bottom: 35px;
+  left: 15px;
+  right: 15px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background-color: #fff;
+  border: 3px solid #000;
+  border-radius: 6px;
+  position: relative;
+}
+
+.progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background-color: #000;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.time {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+}
+
+.wheel {
+  width: 160px;
+  height: 160px;
+  background-color: transparent;
+  border: 4px solid #000;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.center-button {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #000;
+  border-radius: 50%;
+}
+
+.download-btn {
+  width: 250px;
+  padding: 15px 40px;
+  background-color: #ffe066;
+  border: 4px solid #000;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+  color: #000;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.download-btn.active {
+  background-color: #ffe066;
+  color: #000;
+  border-color: #000;
+}
+
+.download-btn:hover.active {
+  background-color: #ffd42a;
+}
+
+.download-btn:not(.active) {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.floating-note {
+  position: absolute;
+  font-size: 1.8rem;
+  color: #000;
+  opacity: 0.7;
+}
+
+.note-1 {
+  top: 15%;
+  left: 8%;
+}
+
+.note-2 {
+  top: 12%;
+  right: 12%;
+}
+
+.note-3 {
+  bottom: 35%;
+  right: 10%;
+}
+
+.note-4 {
+  bottom: 20%;
+  left: 15%;
+}
+
+.status-message {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  color: #333;
+}
+
+.error-container {
+  background-color: #ffebee;
+  border-left: 4px solid #f44336;
+  padding: 0.8rem;
+  margin-bottom: 1.5rem;
+  border-radius: 0 5px 5px 0;
+  max-width: 580px;
+  width: 100%;
+}
+
+#error-message {
+  color: #c62828;
+  font-size: 0.9rem;
+}
+
+.hidden {
+  display: none;
+}
+
+footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  color: #333;
+  font-size: 0.75rem;
+  padding: 10px;
+}
+
+.disclaimer {
+  font-size: 0.7rem;
+  margin-top: 0.5rem;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  h1 {
+      font-size: 3.5rem;
+  }
+  
+  .url-input {
+      max-width: 90%;
+  }
+  
+  .download-btn {
+      width: 200px;
+      font-size: 1.2rem;
+  }
+}
