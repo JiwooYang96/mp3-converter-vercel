@@ -6,8 +6,8 @@ const path = require('path');
 const os = require('os');
 const { v4: uuidv4 } = require('uuid');
 
-// Use yt-dlp-exec package instead of local binary
-const ytdlp = require('yt-dlp-exec');
+// Use youtube-dl-exec package instead of yt-dlp-exec
+const youtubeDl = require('youtube-dl-exec');
 // Use ffmpeg-static package instead of local binary
 const ffmpegPath = require('ffmpeg-static');
 
@@ -42,19 +42,19 @@ function extractYoutubeId(url) {
 // Get video information without downloading
 async function getVideoInfo(url) {
   return new Promise((resolve, reject) => {
-    ytdlp(url, {
-      dumpJson: true,
+    youtubeDl(url, {
+      dumpSingleJson: true,
       noPlaylist: true,
+      noCallHome: true
     })
     .then(output => {
       try {
-        const info = JSON.parse(output);
         resolve({
-          title: info.title,
-          duration: info.duration,
-          thumbnail: info.thumbnail,
-          uploader: info.uploader,
-          id: info.id
+          title: output.title,
+          duration: output.duration,
+          thumbnail: output.thumbnail,
+          uploader: output.uploader,
+          id: output.id
         });
       } catch (e) {
         reject(new Error('Failed to parse video information'));
@@ -107,13 +107,13 @@ async function extractAudio(url) {
       extractAudio: true,
       audioFormat: 'mp3',
       audioQuality: 2, // Slightly lower quality for faster conversion
-      preferFfmpeg: true,
       ffmpegLocation: ffmpegPath,
       output: outputPath,
       noPlaylist: true,
+      noCallHome: true
     };
 
-    ytdlp(url, options)
+    youtubeDl(url, options)
     .then(async () => {
       try {
         // Get the video info to return with the file details
