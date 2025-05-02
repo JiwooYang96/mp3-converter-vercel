@@ -17,75 +17,51 @@ const convertLimiter = rateLimit({
 router.get('/info', async (req, res) => {
   const { url } = req.query;
   
+  console.log(`Received info request for URL: ${url}`);
+  
   if (!url || !validUrl.isUri(url)) {
+    console.log('Invalid URL provided');
     return res.status(400).json({ error: 'Please provide a valid URL' });
   }
   
   if (!isYoutubeUrl(url)) {
+    console.log('Non-YouTube URL provided');
     return res.status(400).json({ error: 'Only YouTube URLs are supported' });
   }
   
   try {
+    console.log('Attempting to get video info');
     const videoInfo = await getVideoInfo(url);
+    console.log('Successfully retrieved video info', videoInfo);
     return res.json(videoInfo);
   } catch (error) {
     console.error('Error getting video info:', error);
-    return res.status(500).json({ error: 'Failed to get video information' });
-  }
-});
-
-// Convert YouTube video to MP3
-router.post('/extract', convertLimiter, async (req, res) => {
-  const { url } = req.body;
-  
-  if (!url || !validUrl.isUri(url)) {
-    return res.status(400).json({ error: 'Please provide a valid URL' });
-  }
-  
-  if (!isYoutubeUrl(url)) {
-    return res.status(400).json({ error: 'Only YouTube URLs are supported' });
-  }
-  
-  try {
-    // First get video info to check if it's available
-    const videoInfo = await getVideoInfo(url);
-    
-    // Check for already converted files with the same YouTube ID to avoid duplicate work
-    const existingFile = await checkExistingFile(videoInfo.id);
-    if (existingFile) {
-      return res.json({
-        message: 'Audio extraction already completed',
-        extractionId: existingFile.extractionId,
-        title: videoInfo.title,
-        downloadUrl: `/api/convert/download/${existingFile.extractionId}`
-      });
-    }
-    
-    // Start extraction (this will be async, we'll return a job ID)
-    const extractionResult = await extractAudio(url);
-    
-    return res.json({
-      message: 'Audio extraction started',
-      extractionId: extractionResult.id,
-      title: extractionResult.title || videoInfo.title,
-      downloadUrl: `/api/convert/download/${extractionResult.id}`
+    return res.status(500).json({ 
+      error: 'Failed to get video information',
+      details: error.message
     });
-  } catch (error) {
-    console.error('Error converting video:', error);
-    return res.status(500).json({ error: 'Failed to convert video to MP3' });
   }
 });
 
-// Check if we already have this video converted to avoid duplicate work
-async function checkExistingFile(youtubeId) {
-  const tempDir = require('os').tmpdir();
-  const outputDir = path.join(tempDir, 'youtube-mp3-output');
-  const metadataFile = path.join(outputDir, 'metadata.json');
-  
-  // Create output directory if it doesn't exist
+// Create custom app directories instead of system temp for better reliability
+const appDir = path.join(process.cwd(), '..', 'app_data');
+const outputDir = path.join(appDir, 'youtube-mp3-output');
+
+// Create directories if they don't exist
+try {
+  if (!fs.existsSync(appDir)) {
+    fs.mkdirSync(appDir, { recursive: true });
+  }
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
+} catch (err) {
+  console.error('Failed to create app directories:', err);
+}
+
+// Check if we already have this video converted to avoid duplicate work
+async function checkExistingFile(youtubeId) {
+  const metadataFile = path.join(outputDir, 'metadata.json');
   
   // Create metadata file if it doesn't exist
   if (!fs.existsSync(metadataFile)) {
@@ -108,11 +84,63 @@ async function checkExistingFile(youtubeId) {
   }
 }
 
+// Convert YouTube video to MP3
+router.post('/extract', convertLimiter, async (req, res) => {
+  const { url } = req.body;
+  
+  console.log(`Received extraction request for URL: ${url}`);
+  
+  if (!url || !validUrl.isUri(url)) {
+    console.log('Invalid URL provided');
+    return res.status(400).json({ error: 'Please provide a valid URL' });
+  }
+  
+  if (!isYoutubeUrl(url)) {
+    console.log('Non-YouTube URL provided');
+    return res.status(400).json({ error: 'Only YouTube URLs are supported' });
+  }
+  
+  try {
+    // First get video info to check if it's available
+    console.log('Getting video info before extraction');
+    const videoInfo = await getVideoInfo(url);
+    
+    // Check for already converted files with the same YouTube ID to avoid duplicate work
+    console.log('Checking for existing converted file');
+    const existingFile = await checkExistingFile(videoInfo.id);
+    if (existingFile) {
+      console.log('Found existing converted file');
+      return res.json({
+        message: 'Audio extraction already completed',
+        extractionId: existingFile.extractionId,
+        title: videoInfo.title,
+        downloadUrl: `/api/convert/download/${existingFile.extractionId}`
+      });
+    }
+    
+    // Start extraction (this will be async, we'll return a job ID)
+    console.log('Starting audio extraction');
+    const extractionResult = await extractAudio(url);
+    console.log('Extraction result:', extractionResult);
+    
+    return res.json({
+      message: 'Audio extraction started',
+      extractionId: extractionResult.id,
+      title: extractionResult.title || videoInfo.title,
+      downloadUrl: `/api/convert/download/${extractionResult.id}`
+    });
+  } catch (error) {
+    console.error('Error converting video:', error);
+    return res.status(500).json({ 
+      error: 'Failed to convert video to MP3',
+      details: error.message
+    });
+  }
+});
+
 // Download the converted MP3
 router.get('/download/:id', (req, res) => {
   const { id } = req.params;
-  const tempDir = require('os').tmpdir();
-  const outputDir = path.join(tempDir, 'youtube-mp3-output');
   const filePath = path.join(outputDir, `${id}.mp3`);
   
   console.log('Download request for:', id);
@@ -162,8 +190,6 @@ router.get('/download/:id', (req, res) => {
 // Check status of conversion
 router.get('/status/:id', (req, res) => {
   const { id } = req.params;
-  const tempDir = require('os').tmpdir();
-  const outputDir = path.join(tempDir, 'youtube-mp3-output');
   const filePath = path.join(outputDir, `${id}.mp3`);
   
   if (fs.existsSync(filePath)) {

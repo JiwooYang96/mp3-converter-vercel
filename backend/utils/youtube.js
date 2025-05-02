@@ -6,16 +6,31 @@ const path = require('path');
 const os = require('os');
 const { v4: uuidv4 } = require('uuid');
 
-// Use youtube-dl-exec package instead of yt-dlp-exec
+// Use youtube-dl-exec with improved configuration options
 const youtubeDl = require('youtube-dl-exec');
-// Use ffmpeg-static package instead of local binary
+// Use ffmpeg-static package 
 const ffmpegPath = require('ffmpeg-static');
 
-// Use system temp directory for temporary storage
-const tempDir = os.tmpdir();
-const downloadsDir = join(tempDir, 'youtube-mp3-downloads');
-const outputDir = join(tempDir, 'youtube-mp3-output');
+// Create custom app directories instead of system temp for better reliability
+const appDir = path.join(process.cwd(), '..', 'app_data');
+const downloadsDir = join(appDir, 'youtube-mp3-downloads');
+const outputDir = join(appDir, 'youtube-mp3-output');
 const metadataPath = join(outputDir, 'metadata.json');
+
+// Create directories if they don't exist
+try {
+  if (!fs.existsSync(appDir)) {
+    fs.mkdirSync(appDir, { recursive: true });
+  }
+  if (!fs.existsSync(downloadsDir)) {
+    fs.mkdirSync(downloadsDir, { recursive: true });
+  }
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+} catch (err) {
+  console.error('Failed to create app directories:', err);
+}
 
 // Check if the URL is a valid YouTube URL
 function isYoutubeUrl(url) {
@@ -30,8 +45,12 @@ function extractYoutubeId(url) {
   if (url.includes('youtu.be/')) {
     id = url.split('youtu.be/')[1].split(/[?&]/)[0];
   } else if (url.includes('youtube.com/watch')) {
-    const urlParams = new URL(url).searchParams;
-    id = urlParams.get('v');
+    try {
+      const urlParams = new URL(url).searchParams;
+      id = urlParams.get('v');
+    } catch (e) {
+      console.error('Error parsing YouTube URL:', e);
+    }
   } else if (url.includes('youtube.com/embed/')) {
     id = url.split('youtube.com/embed/')[1].split(/[?&]/)[0];
   }
@@ -41,14 +60,25 @@ function extractYoutubeId(url) {
 
 // Get video information without downloading
 async function getVideoInfo(url) {
+  console.log(`Getting info for video URL: ${url}`);
+  
   return new Promise((resolve, reject) => {
-    youtubeDl(url, {
+    // Add more robust options for recent YouTube changes
+    const options = {
       dumpSingleJson: true,
       noPlaylist: true,
-      noCallHome: true
-    })
+      noCallHome: true,
+      // Add options to help with modern YouTube
+      forceIpv4: true,
+      skipDownload: true,
+      // Add updated user agent
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    };
+    
+    youtubeDl(url, options)
     .then(output => {
       try {
+        console.log('Successfully retrieved video info');
         resolve({
           title: output.title,
           duration: output.duration,
@@ -57,12 +87,13 @@ async function getVideoInfo(url) {
           id: output.id
         });
       } catch (e) {
+        console.error('Failed to parse video information:', e);
         reject(new Error('Failed to parse video information'));
       }
     })
     .catch(error => {
       console.error('Error getting video info:', error);
-      reject(new Error('Failed to get video information'));
+      reject(new Error(`Failed to get video information: ${error.message}`));
     });
   });
 }
@@ -91,14 +122,6 @@ async function extractAudio(url) {
   const outputPath = path.join(outputDir, outputFilename);
 
   return new Promise((resolve, reject) => {
-    // Make sure the directories exist
-    if (!fs.existsSync(downloadsDir)) {
-      fs.mkdirSync(downloadsDir, { recursive: true });
-    }
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
     // Get the YouTube ID from the URL to store in our metadata
     const youtubeId = extractYoutubeId(url);
 
@@ -110,7 +133,11 @@ async function extractAudio(url) {
       ffmpegLocation: ffmpegPath,
       output: outputPath,
       noPlaylist: true,
-      noCallHome: true
+      noCallHome: true,
+      // Add options to help with modern YouTube
+      forceIpv4: true,
+      // Add updated user agent
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     };
 
     youtubeDl(url, options)
@@ -143,13 +170,13 @@ async function extractAudio(url) {
     })
     .catch(error => {
       console.error('Error extracting audio:', error);
-      reject(new Error('Failed to extract audio'));
+      reject(new Error(`Failed to extract audio: ${error.message}`));
     });
   });
 }
 
 // Clean up old files (can be called periodically)
-function cleanupOldFiles(maxAgeMinutes = 5) { // Reduced to 5 minutes for aggressive cleanup
+function cleanupOldFiles(maxAgeMinutes = 5) {
   const maxAgeMs = maxAgeMinutes * 60 * 1000;
   const now = Date.now();
   
